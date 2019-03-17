@@ -62,6 +62,10 @@ indxB = AssignmentToIndex(assignments(:, mapB), B.card);
 % Correctly populate the factor values of C
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%    phi = SetValueOfAssignment(phi, [2 2 1], 6) 
+% disp(assignments(:, mapA));
+% disp(GetValueOfAssignment(A, assignments(:, mapA))');
+C = SetValueOfAssignment(C, assignments, GetValueOfAssignment(A, assignments(:, mapA)) .* GetValueOfAssignment(B, assignments(:, mapB)))
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 end
