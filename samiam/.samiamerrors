@@ -1,0 +1,2 @@
+SamIam launch command "/usr/bin/java -Xms8m -Xmx512m -classpath /Users/datnguyen/Desktop/coursera_pgm/samiam/samiam.jar:/Users/datnguyen/Desktop/coursera_pgm/samiam/inflib.jar edu.ucla.belief.ui.UI "
+SamIam launched by "/Users/datnguyen/Desktop/coursera_pgm/samiam/runsamiam"
