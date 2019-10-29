@@ -37,14 +37,33 @@ MESSAGES = repmat(struct('var', [], 'card', [], 'val', []), N, N);
 %
  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
+while true
+    [i, j] = GetNextCliques(P, MESSAGES);
+    if i == 0 && j == 0
+        break
+    end
+    neighborNodes = find(P.edges(:, i));
+    MESSAGES(i, j) = P.cliqueList(i);
+    for idx = 1:length(neighborNodes)
+        if neighborNodes(idx) ~= j
+            MESSAGES(i, j) = FactorProduct(MESSAGES(i, j), MESSAGES(neighborNodes(idx), i));
+        end
+    end
+    marginNodes = setdiff(P.cliqueList(i).var, P.cliqueList(j).var);
+    MESSAGES(i, j) = FactorMarginalization(MESSAGES(i, j), marginNodes);
+    MESSAGES(i, j).val = MESSAGES(i, j).val / sum(MESSAGES(i, j).val);
+end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % YOUR CODE HERE
 %
 % Now the clique tree has been calibrated. 
 % Compute the final potentials for the cliques and place them in P.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-
+for i = 1:N
+    neighborNodes = find(P.edges(:, i));
+    for j = 1:length(neighborNodes)
+        P.cliqueList(i) = FactorProduct(P.cliqueList(i), MESSAGES(neighborNodes(j), i));
+        MESSAGES(neighborNodes(j), i).var;
+    end
+end
 return
