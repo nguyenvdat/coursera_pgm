@@ -22,6 +22,30 @@ M = [];
 % YOUR CODE HERE
 %
 % Implement Exact and MAP Inference.
+nVar = length(unique([F.var]));
+M = repmat(struct('var', [], 'card', [], 'val', []), nVar, 1);
+P = CreateCliqueTree(F, E);
+P = CliqueTreeCalibrate(P, isMax);
+N = length(P.cliqueList);
+marginalizedCount = 0;
+isDone = false;
+for i = 1:N
+    if isDone
+        break
+    end
+    for j = 1:length(P.cliqueList(i).var)
+        if isempty(M(P.cliqueList(i).var(j)).var)
+            M(P.cliqueList(i).var(j)) = FactorMarginalization(P.cliqueList(i), setdiff(P.cliqueList(i).var, P.cliqueList(i).var(j)));
+            M(P.cliqueList(i).var(j)).val = M(P.cliqueList(i).var(j)).val / sum(M(P.cliqueList(i).var(j)).val);
+            marginalizedCount = marginalizedCount + 1;
+        end
+        if marginalizedCount == nVar
+            isDone = true;
+            break
+        end
+    end
+end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 end
