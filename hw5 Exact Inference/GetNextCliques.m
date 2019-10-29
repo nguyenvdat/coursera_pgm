@@ -32,6 +32,30 @@ j = 0;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % YOUR CODE HERE
+N = length(P.edges);
+for n1 = 1:N
+    emptyMessageCount = 0;
+    neighborNodes = find(P.edges(:,n1));
+    for n2 = 1:length(neighborNodes)
+        if ~isempty(messages(n1, neighborNodes(n2)).var)
+            continue
+        end
+        otherNodes = neighborNodes;
+        otherNodes(n2) = [];
+        allSent = true;
+        for n3 = 1:length(otherNodes)
+            if isempty(messages(otherNodes(n3), n1).var)
+                allSent = false;
+                break
+            end
+        end
+        if allSent
+            i = n1;
+            j = neighborNodes(n2);
+            return
+        end
+    end
+end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
