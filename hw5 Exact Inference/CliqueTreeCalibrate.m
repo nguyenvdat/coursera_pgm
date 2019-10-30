@@ -36,6 +36,11 @@ MESSAGES = repmat(struct('var', [], 'card', [], 'val', []), N, N);
 % Remember that you only need an upward pass and a downward pass.
 %
  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ if isMax
+    for i = 1:N
+        P.cliqueList(i).val = log(P.cliqueList(i).val);
+    end
+ end
 
 while true
     [i, j] = GetNextCliques(P, MESSAGES);
@@ -46,12 +51,20 @@ while true
     MESSAGES(i, j) = P.cliqueList(i);
     for idx = 1:length(neighborNodes)
         if neighborNodes(idx) ~= j
-            MESSAGES(i, j) = FactorProduct(MESSAGES(i, j), MESSAGES(neighborNodes(idx), i));
+            if isMax
+                MESSAGES(i, j) = FactorSum(MESSAGES(i, j), MESSAGES(neighborNodes(idx), i));
+            else
+                MESSAGES(i, j) = FactorProduct(MESSAGES(i, j), MESSAGES(neighborNodes(idx), i));
+            end
         end
     end
     marginNodes = setdiff(P.cliqueList(i).var, P.cliqueList(j).var);
-    MESSAGES(i, j) = FactorMarginalization(MESSAGES(i, j), marginNodes);
-    MESSAGES(i, j).val = MESSAGES(i, j).val / sum(MESSAGES(i, j).val);
+    if isMax
+        MESSAGES(i, j) = FactorMaxMarginalization(MESSAGES(i, j), marginNodes);
+    else
+        MESSAGES(i, j) = FactorMarginalization(MESSAGES(i, j), marginNodes);
+        MESSAGES(i, j).val = MESSAGES(i, j).val / sum(MESSAGES(i, j).val);
+    end
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % YOUR CODE HERE
@@ -62,8 +75,11 @@ end
 for i = 1:N
     neighborNodes = find(P.edges(:, i));
     for j = 1:length(neighborNodes)
-        P.cliqueList(i) = FactorProduct(P.cliqueList(i), MESSAGES(neighborNodes(j), i));
-        MESSAGES(neighborNodes(j), i).var;
+        if isMax
+            P.cliqueList(i) = FactorSum(P.cliqueList(i), MESSAGES(neighborNodes(j), i));
+        else
+            P.cliqueList(i) = FactorProduct(P.cliqueList(i), MESSAGES(neighborNodes(j), i));
+        end
     end
 end
 return

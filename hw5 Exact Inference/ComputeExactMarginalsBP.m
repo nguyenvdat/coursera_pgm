@@ -35,8 +35,12 @@ for i = 1:N
     end
     for j = 1:length(P.cliqueList(i).var)
         if isempty(M(P.cliqueList(i).var(j)).var)
-            M(P.cliqueList(i).var(j)) = FactorMarginalization(P.cliqueList(i), setdiff(P.cliqueList(i).var, P.cliqueList(i).var(j)));
-            M(P.cliqueList(i).var(j)).val = M(P.cliqueList(i).var(j)).val / sum(M(P.cliqueList(i).var(j)).val);
+            if isMax
+                M(P.cliqueList(i).var(j)) = FactorMaxMarginalization(P.cliqueList(i), setdiff(P.cliqueList(i).var, P.cliqueList(i).var(j)));
+            else
+                M(P.cliqueList(i).var(j)) = FactorMarginalization(P.cliqueList(i), setdiff(P.cliqueList(i).var, P.cliqueList(i).var(j)));
+                M(P.cliqueList(i).var(j)).val = M(P.cliqueList(i).var(j)).val / sum(M(P.cliqueList(i).var(j)).val);
+            end
             marginalizedCount = marginalizedCount + 1;
         end
         if marginalizedCount == nVar
