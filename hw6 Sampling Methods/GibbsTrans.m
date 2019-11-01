@@ -22,6 +22,10 @@ for i = 1:length(G.names)
     % Also, note that randsample() requires arguments in raw probability space
     % be sure that the arguments you pass to it meet that criteria
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+    log_prob = BlockLogDistribution([i], G, F, A);
+    prob = exp(log_prob);
+    prob = prob / (sum(prob));
+    d = G.card(i);
+    A(i) = randsample(1:d, 1, true, prob);
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 end
