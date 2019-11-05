@@ -23,7 +23,9 @@ if (length(allFactors) <= F)
 end
 
 % Your code here:
-factors = allFactors; %%% REMOVE THIS LINE
+similarityScores = arrayfun(@(f) f.val(1), allFactors);
+[_, I] = sort(similarityScores, 'descend');
+factors = allFactors(I(1:F));
 
 end
 
