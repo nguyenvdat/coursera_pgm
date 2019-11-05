@@ -27,5 +27,11 @@ end
 factors = repmat(struct('var', [], 'card', [], 'val', []), n - 1, 1);
 
 % Your code here:
+val = reshape(pairwiseModel, [], 1);
+for i = 1:length(images) - 1
+    factors(i).var = [i, i + 1];
+    factors(i).card = [K, K];
+    factors(i).val = val;
+end
 
 end
