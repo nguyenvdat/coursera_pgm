@@ -76,14 +76,19 @@ if bSwendsenWang
               % Specify the q_{i,j}'s for Swendsen-Wang for variant 1
               %
               %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+              q_ij = 0.5;
               %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
           elseif strcmp(TransName, 'MHSwendsenWang2')
               %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
               % YOUR CODE HERE 
               % Specify the q_{i,j}'s for Swendsen-Wang for variant 2
               %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+              % find the factor of both node u and v
+              f_idx = intersect(G.var2factors(u(i)), G.var2factors(v(i)))[1];
+              f = F(f_idx);
+              d = min(G.card(u(i)), G.card(v(i)));
+              assignment = [(1:d)' (1:d)'];
+              q_ij = sum(f.val(AssignmentToIndex(assignment, G.card([u(i) v(i)]))))/sum(f.val);
               %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
           else
               disp('WARNING: unrecognized Swendsen-Wang name');

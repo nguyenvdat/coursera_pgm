@@ -47,7 +47,7 @@ if variant == 1
     % Specify the log of the distribution (LogR) from 
     % which a new label for Y is selected for variant 1 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+    LogR = ones(1, d) / d;
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 elseif variant == 2
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -59,7 +59,7 @@ elseif variant == 2
     % before implementing this, one of the generated
     % data structures may be useful in implementing this section
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+    LogR = BlockLogDistribution(selected_vars, G, F, A):
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 else
     disp('WARNING: Unrecognized Swendsen-Wang Variant');
@@ -95,7 +95,13 @@ p_acceptance = 0.0;
 % of variables, as well as some ratios used in computing
 % the acceptance probabilitiy.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+if variant == 1
+    LogR_new = ones(1, d) / d;
+else
+    LogR_new = BlockLogDistribution(selected_vars, G, F, A_prop):
+end
+lop_p_acceptance = min(0, log_QY_ratio + LogR_new(1, old_value) - LogR(1, new_value));
+p_acceptance = exp(log_p_acceptance);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Accept or reject proposal
