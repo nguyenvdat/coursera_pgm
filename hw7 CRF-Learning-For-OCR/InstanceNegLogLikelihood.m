@@ -60,6 +60,73 @@ function [nll, grad] = InstanceNegLogLikelihood(X, y, theta, modelParams)
     grad = zeros(size(theta));
     %%%
     % Your code here:
-    
+    nChar = length(y);
+    P = cliqueTreeFromFeatures(featureSet, theta, nChar);
+    [P, logZ] = CliqueTreeCalibrate(P, 0);
+    weightedFeatureCount = computeWeightedFeatureCount(featureSet, y, theta, nChar);
+    nll = logZ - weightedFeatureCount + modelParams.lambda / 2 * sum(theta .* theta);
+end
 
+function weightedFeatureCount = computeWeightedFeatureCount(featureSet, y, theta, nChar)
+    weightedFeatureCount = 0;
+    for i = 1:nChar
+        if i < nChar
+            pairwiseTheta = getFeatureTheta(featureSet, [i, i+1], [y(i), y(i + 1)], theta, nChar);
+            weightedFeatureCount = weightedFeatureCount + pairwiseTheta;
+        end
+        singletonTheta = getFeatureTheta(featureSet, [i], [y(i)], theta, nChar);
+        weightedFeatureCount = weightedFeatureCount + sum(singletonTheta);
+    end
+end
+
+function thetaList = getFeatureTheta(featureSet, vars, assignment, theta, nChar)
+    % idx = ([featureSet.var] == vars) & ([featureSet.assignment] = assignment)
+    % thetaList = theta([featureSet.paramIdx](idx));
+    K = 26;
+    singletonCount = K * nChar * 33;
+    features = featureSet.features;
+    if length(vars) == 2
+        i = assignment(1);
+        j = assignment(2);
+        x = vars(1);
+        index = singletonCount + (i - 1) * K * (nChar - 1) + (j - 1) * (nChar - 1) + x;
+        thetaList = [theta(features(index).paramIdx)];
+    else
+        idx = ([features(1:singletonCount).var] == vars) & ([features(1:singletonCount).assignment] == assignment);
+        thetaList = theta([features.paramIdx](idx));
+    end
+end
+
+function P = cliqueTreeFromFeatures(featureSet, theta, nChar)
+    K = 26;
+    cliqueList = repmat(struct('var', [], 'card', [K, K], 'val', zeros(1, K * K)), nChar - 1, 1);
+    edges = zeros(nChar - 1, nChar - 1);
+    for i = 1:nChar - 1
+        cliqueList(i).var = [i, i + 1];
+        if i < nChar - 1
+            edges(i, i + 1) = 1;
+            edges(i + 1, i) = 1;
+        end
+    end
+    for i = 1:length(featureSet.features)
+        f = featureSet.features(i);
+        vars = f.var;
+        cliqueIndex = vars(1);
+        if length(vars) == 1 % singleton feature
+            val = f.assignment(1);
+            if cliqueIndex == nChar
+                cliqueIndex = cliqueIndex - 1;
+                assignment = [(1:K)' ones(K, 1) * val];
+            else
+                assignment = [ones(K, 1) * val (1:K)'];
+            end
+        else
+            assignment = f.assignment;
+        end
+        index = AssignmentToIndex(assignment, [K, K]);
+        cliqueList(cliqueIndex).val(index(cliqueList(cliqueIndex).val(index) == 0)) = 1;
+        cliqueList(cliqueIndex).val(index) = cliqueList(cliqueIndex).val(index) * exp(theta(f.paramIdx));
+    end
+    P.cliqueList = cliqueList;
+    P.edges = edges;
 end
