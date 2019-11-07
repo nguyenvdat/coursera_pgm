@@ -65,23 +65,71 @@ function [nll, grad] = InstanceNegLogLikelihood(X, y, theta, modelParams)
     [P, logZ] = CliqueTreeCalibrate(P, 0);
     weightedFeatureCount = computeWeightedFeatureCount(featureSet, y, theta, nChar);
     nll = logZ - weightedFeatureCount + modelParams.lambda / 2 * sum(theta .* theta);
+    grad = gradModelFeatureCount(P, featureSet, grad, nChar);
+    grad = gradDataFeatureCount(P, featureSet, y, grad, nChar);
+    grad = gradRegularization(grad, theta, modelParams.lambda);
+end
+
+function grad = gradModelFeatureCount(P, featureSet, grad, nChar)
+    % Calculate grad model expected feature count 
+    K = 26;
+    for i = 1:nChar
+        if i < nChar
+            % singleton feature
+            B = FactorMarginalization(P.cliqueList(i), [i + 1]);
+            for y_i = 1:K
+                singletonIdx = getFeatureThetaIndex(featureSet, [i], [y_i], nChar);
+                grad(singletonIdx) = grad(singletonIdx) + B.val(y_i);
+            end
+            % pairwise feature
+            for y_i = 1:K
+                for y_next = 1:K
+                    pairwiseIdx = getFeatureThetaIndex(featureSet, [i, i + 1], [y_i, y_next], nChar);
+                    grad(pairwiseIdx) = grad(pairwiseIdx) + P.cliqueList(i).val(AssignmentToIndex([y_i, y_next], [K, K]));
+                end
+            end
+        else
+            % singleton feature
+            B = FactorMarginalization(P.cliqueList(i - 1), [i - 1]);
+            for y_i = 1:K
+                singletonIdx = getFeatureThetaIndex(featureSet, [i], [y_i], nChar);
+                grad(singletonIdx) = grad(singletonIdx) + B.val(y_i);
+            end
+        end
+    end
+end
+
+function grad = gradDataFeatureCount(P, featureSet, y, grad, nChar)
+    % Calculate grad data feature count
+    K = 26;
+    for i = 1:nChar
+        singletonIdx = getFeatureThetaIndex(featureSet, [i], [y(i)], nChar);
+        grad(singletonIdx) = grad(singletonIdx) - 1;
+        if i < nChar
+            pairwiseIdx = getFeatureThetaIndex(featureSet, [i, i + 1], [y(i), y(i + 1)], nChar);
+            grad(pairwiseIdx) = grad(pairwiseIdx) - 1;
+        end
+    end
+end
+
+function grad = gradRegularization(grad, theta, lambda)
+    grad = grad + lambda * theta;
 end
 
 function weightedFeatureCount = computeWeightedFeatureCount(featureSet, y, theta, nChar)
     weightedFeatureCount = 0;
     for i = 1:nChar
         if i < nChar
-            pairwiseTheta = getFeatureTheta(featureSet, [i, i+1], [y(i), y(i + 1)], theta, nChar);
+            pairwiseTheta = theta(getFeatureThetaIndex(featureSet, [i, i+1], [y(i), y(i + 1)], nChar));
             weightedFeatureCount = weightedFeatureCount + pairwiseTheta;
         end
-        singletonTheta = getFeatureTheta(featureSet, [i], [y(i)], theta, nChar);
+        singletonTheta = theta(getFeatureThetaIndex(featureSet, [i], [y(i)], nChar));
         weightedFeatureCount = weightedFeatureCount + sum(singletonTheta);
     end
 end
 
-function thetaList = getFeatureTheta(featureSet, vars, assignment, theta, nChar)
-    % idx = ([featureSet.var] == vars) & ([featureSet.assignment] = assignment)
-    % thetaList = theta([featureSet.paramIdx](idx));
+function thetaIdx = getFeatureThetaIndex(featureSet, vars, assignment, nChar)
+    % Return the index of theta for this feature
     K = 26;
     singletonCount = K * nChar * 33;
     features = featureSet.features;
@@ -89,11 +137,11 @@ function thetaList = getFeatureTheta(featureSet, vars, assignment, theta, nChar)
         i = assignment(1);
         j = assignment(2);
         x = vars(1);
-        index = singletonCount + (i - 1) * K * (nChar - 1) + (j - 1) * (nChar - 1) + x;
-        thetaList = [theta(features(index).paramIdx)];
+        featureIdx = singletonCount + (i - 1) * K * (nChar - 1) + (j - 1) * (nChar - 1) + x;
+        thetaIdx = features(featureIdx).paramIdx;
     else
-        idx = ([features(1:singletonCount).var] == vars) & ([features(1:singletonCount).assignment] == assignment);
-        thetaList = theta([features.paramIdx](idx));
+        featureIdx = ([features(1:singletonCount).var] == vars) & ([features(1:singletonCount).assignment] == assignment);
+        thetaIdx = [features.paramIdx](featureIdx);
     end
 end
 
