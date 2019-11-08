@@ -9,4 +9,6 @@ sigma = 1;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 % YOUR CODE HERE
+mu = mean(X);
+sigma = sqrt(mean(X .* X) - mu ^ 2);
 %%%%%%%%%%%%%%%%%%%%%%%%%%

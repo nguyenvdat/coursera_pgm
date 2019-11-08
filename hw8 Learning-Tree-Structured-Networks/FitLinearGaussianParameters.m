@@ -26,22 +26,28 @@ sigma = 1;
 % construct A
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % YOUR CODE HERE
+A = [[sum(U, 1) M]; [U' * U sum(U, 1)']]/M;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 % B = [ E[X]; E[X*U(1)]; ... ; E[X*U(n)] ]
-
 % construct B
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % YOUR CODE HERE
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+B = [mean(X); U' * X / M];
 
 % solve A*Beta = B
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % YOUR CODE HERE
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+Beta = A\B; % N+1 x 1
 % then compute sigma according to eq. (11) in PA description
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % YOUR CODE HERE
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+covX = mean(X .* X) - mean(X) ^ 2;
+meanU = mean(U, 1); % 1 x N
+shortedBeta = Beta(1:end-1);
+covU = sum(sum((shortedBeta * shortedBeta') .* (U' * U / M - meanU' * meanU)));
+sigma = sqrt(covX - covU);
