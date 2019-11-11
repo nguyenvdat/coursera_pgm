@@ -11,6 +11,7 @@ function [A W] = LearnGraphStructure(dataset)
 % Copyright (C) Daphne Koller, Stanford Univerity, 2012
 
 N = size(dataset,1);
+n_parts = size(dataset,2);
 K = size(dataset,3);
 
 W = zeros(10,10);
@@ -19,6 +20,11 @@ W = zeros(10,10);
 % you don't have to include M since all entries are scaled by the same M
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 % YOUR CODE HERE        
+for i = 1:n_parts
+    for j = 1:n_parts
+        W(i, j) = GaussianMutualInformation(squeeze(dataset(:, i, :)), squeeze(dataset(:, j, :)));
+    end
+end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Compute maximum spanning tree
