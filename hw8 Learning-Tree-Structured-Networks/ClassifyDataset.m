@@ -18,6 +18,17 @@ accuracy = 0.0;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % YOUR CODE HERE
+K = size(labels, 2);
+n_corrected = 0;
+for i = 1:N
+    ll = LoglikelihoodInstance(P, G, squeeze(dataset(i, :, :)));
+    [_, max_idx] = max(ll);
+    if max_idx == find(labels(i, :) > 0)
+        n_corrected = n_corrected + 1;
+    end
+end
+accuracy = n_corrected / N;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 fprintf('Accuracy: %.2f\n', accuracy);
+end
