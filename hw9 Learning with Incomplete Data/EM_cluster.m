@@ -33,6 +33,8 @@ function [P loglikelihood ClassProb] = EM_cluster(poseData, G, InitialClassProb,
     P.clg.sigma_x = [];
     P.clg.sigma_y = [];
     P.clg.sigma_angle = [];
+    n_parts = size(poseData, 2);
+    n_theta = size(poseData, 3) * (size(poseData, 3) + 1);
 
     % EM algorithm
     for iter = 1:maxIter
@@ -50,6 +52,54 @@ function [P loglikelihood ClassProb] = EM_cluster(poseData, G, InitialClassProb,
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % YOUR CODE HERE
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        for c = 1:K
+            W = ClassProb(:, c);
+            P.c(c) = sum(W) / N;
+
+            for i = 1:n_parts
+
+                if c == 1 && iter == 1
+                    P.clg(i).sigma_y = zeros(1, K);
+                    P.clg(i).sigma_x = zeros(1, K);
+                    P.clg(i).sigma_angle = zeros(1, K);
+                end
+
+                D_y = squeeze(poseData(:, i, 1)); % n x 1
+                D_x = squeeze(poseData(:, i, 2));
+                D_angle = squeeze(poseData(:, i, 3));
+
+                if G(i, 1) == 0
+
+                    if c == 1 && iter == 0
+                        P.clg(i).mu_y = zeros(1, K);
+                        P.clg(i).mu_x = zeros(1, K);
+                        P.clg(i).mu_angle = zeros(1, K);
+                    end
+
+                    % only class as parent
+                    [P.clg(i).mu_y(c), P.clg(i).sigma_y(c)] = FitG(D_y, W);
+                    [P.clg(i).mu_x(c), P.clg(i).sigma_x(c)] = FitG(D_x, W);
+                    [P.clg(i).mu_angle(c), P.clg(i).sigma_angle(c)] = FitG(D_angle, W);
+                else
+
+                    if c == 1 && iter == 1
+                        P.clg(i).theta = zeros(K, n_theta);
+                    end
+
+                    parent_node = G(i, 2);
+                    D_p = squeeze(poseData(:, parent_node, :));
+                    [Beta_y, sigma_y] = FitLG(D_y, D_p, W);
+                    [Beta_x, sigma_x] = FitLG(D_x, D_p, W);
+                    [Beta_angle, sigma_angle] = FitLG(D_angle, D_p, W);
+                    P.clg(i).sigma_y(c) = sigma_y;
+                    P.clg(i).sigma_x(c) = sigma_x;
+                    P.clg(i).sigma_angle(c) = sigma_angle;
+                    P.clg(i).theta(c, :) = [[Beta_y(end); Beta_y(1:end - 1)]' [Beta_x(end); Beta_x(1:end - 1)]' [Beta_angle(end); Beta_angle(1:end - 1)]'];
+                end
+
+            end
+
+        end
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -74,12 +124,50 @@ function [P loglikelihood ClassProb] = EM_cluster(poseData, G, InitialClassProb,
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % YOUR CODE HERE
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        logpdf = inline('-log(sigma*sqrt(2*pi))-(x-mu).^2 ./ (2*sigma.^2)', 'x', 'mu', 'sigma');
+
+        for c = 1:K
+
+            for n = 1:N
+                ll = log(P.c(c));
+
+                for i = 1:n_parts
+                    y = poseData(n, i, 1);
+                    x = poseData(n, i, 2);
+                    alpha = poseData(n, i, 3);
+                    sigma_y = P.clg(i).sigma_y(c);
+                    sigma_x = P.clg(i).sigma_x(c);
+                    sigma_angle = P.clg(i).sigma_angle(c);
+
+                    if G(i, 1) == 0
+                        % only class as parent
+                        ll = ll + logpdf(y, P.clg(i).mu_y(c), sigma_y);
+                        ll = ll + logpdf(x, P.clg(i).mu_x(c), sigma_x);
+                        ll = ll + logpdf(alpha, P.clg(i).mu_angle(c), sigma_angle);
+                    else
+                        parent_node = G(i, 2);
+                        parent_val = squeeze(poseData(n, parent_node, :))';
+                        theta = P.clg(i).theta(c, :);
+                        ll = ll + logpdf(y, dot(theta(1:4), [1 parent_val]), sigma_y);
+                        ll = ll + logpdf(x, dot(theta(5:8), [1 parent_val]), sigma_x);
+                        ll = ll + logpdf(alpha, dot(theta(9:12), [1 parent_val]), sigma_angle);
+                    end
+
+                end
+
+                ClassProb(n, c) = ll;
+            end
+
+        end
+
+        loglikelihood(iter) = sum(logsumexp(ClassProb));
+        ClassProb = exp(ClassProb);
+        ClassProb = ClassProb ./ sum(ClassProb, 2);
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         % Compute log likelihood of dataset for this iteration
         % Hint: You should use the logsumexp() function here
-        loglikelihood(iter) = 0;
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % YOUR CODE HERE
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
