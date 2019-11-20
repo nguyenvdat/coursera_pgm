@@ -47,7 +47,7 @@ if variant == 1
     % Specify the log of the distribution (LogR) from 
     % which a new label for Y is selected for variant 1 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    LogR = ones(1, d) / d;
+    LogR = log(ones(1, d) / d);
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 elseif variant == 2
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -59,7 +59,8 @@ elseif variant == 2
     % before implementing this, one of the generated
     % data structures may be useful in implementing this section
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    LogR = BlockLogDistribution(selected_vars, G, F, A):
+    LogR = BlockLogDistribution(selected_vars, G, F, A);
+    LogR = LogR - log(sum(exp(LogR)));
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 else
     disp('WARNING: Unrecognized Swendsen-Wang Variant');
@@ -96,11 +97,19 @@ p_acceptance = 0.0;
 % the acceptance probabilitiy.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if variant == 1
-    LogR_new = ones(1, d) / d;
+    LogR_new = log(ones(1, d) / d);
 else
-    LogR_new = BlockLogDistribution(selected_vars, G, F, A_prop):
+    LogR_new = BlockLogDistribution(selected_vars, G, F, A_prop);
+    LogR_new = LogR_new - log(sum(exp(LogR_new)));
 end
-lop_p_acceptance = min(0, log_QY_ratio + LogR_new(1, old_value) - LogR(1, new_value));
+Log_pi_old = 0.0;
+Log_pi_new = 0.0;
+for idx = 1:length(F)
+    f = F(idx);
+    Log_pi_old = Log_pi_old + log(f.val(AssignmentToIndex(A(f.var), f.card)));
+    Log_pi_new = Log_pi_new + log(f.val(AssignmentToIndex(A_prop(f.var), f.card)));
+end
+log_p_acceptance = min(0, Log_pi_new - Log_pi_old + log_QY_ratio + LogR_new(1, old_value) - LogR(1, new_value));
 p_acceptance = exp(log_p_acceptance);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
